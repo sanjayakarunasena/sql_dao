@@ -27,10 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tech.sqldao.annotation.DaoMethods;
-import tech.sqldao.annotation.Query;
-import tech.sqldao.annotation.Result;
 import tech.sqldao.annotation.DaoMethods.DaoMethod;
+import tech.sqldao.annotation.Query;
 import tech.sqldao.annotation.Query.ParameterType;
+import tech.sqldao.annotation.Result;
 import tech.sqldao.annotation.Result.Column;
 import tech.sqldao.dbcon.DBConfigException;
 import tech.sqldao.dbcon.DBConnectionManager;
@@ -747,7 +747,7 @@ public abstract class AbstractDAO {
 
     /**
      * Get the sql query to be executed. If it has an IN clause it will construct the proper sql to be used in the
-     * prepared statement. Currently this only support one IN clause.
+     * prepared statement. Currently this only support one IN clause and it should be written as "IN (?..?)".
      * 
      * @param query
      *            Annotated query to be used.

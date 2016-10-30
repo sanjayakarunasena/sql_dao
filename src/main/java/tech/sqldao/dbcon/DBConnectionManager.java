@@ -22,9 +22,6 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 /**
  *
  * @author Sanjaya Karunasena
@@ -49,8 +46,7 @@ public class DBConnectionManager {
     }
 
     /**
-     * Initialise the data source for the connection pool from a JNDI configuration,
-     * "java:comp/env/jdbc/auth_server_ds".
+     * Initialise the data source for the connection pool from a JNDI configuration, "java:comp/env/jdbc/my_server_ds".
      * 
      * @param datasource
      *            Datasource name (e.g. jdbc/mydatasource)
@@ -86,70 +82,5 @@ public class DBConnectionManager {
         }
 
         DBConnectionManager.dataSource = dataSource;
-    }
-
-    /**
-     * Setup the data source for the connection pool from the $APPLICATION_HOME/conf/db_config.xml file.
-     * 
-     * @throws DBConfigException
-     * 
-     * @Deprecated {@link Datasource} should be provided by the application or the container.
-     */
-    @Deprecated
-    public static synchronized void setup() throws DBConfigException {
-        if (dataSource != null) {
-            LOG.warn("Data source is already setup for this java runtime instance.");
-            return;
-        }
-
-        DBConfig dbConf = DBConfig.loadDBConfig();
-
-        String jdbcUrl = createJdbcUrl(dbConf);
-
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(jdbcUrl);
-        config.setUsername(dbConf.getDbUser());
-        config.setPassword(dbConf.getDbPasswd());
-        config.setConnectionTimeout(dbConf.getConTimeout() * 1000);
-        config.setMinimumIdle(dbConf.getMinIdleCons());
-        config.setMaximumPoolSize(dbConf.getMaxPoolSize());
-        config.setPoolName(dbConf.getPoolName());
-        config.setTransactionIsolation(dbConf.getTxIsolation());
-
-        dataSource = new HikariDataSource(config);
-    }
-
-    private static String createJdbcUrl(DBConfig dbConf) {
-        String[] addresses = dbConf.getServerAddresses();
-        String jdbcUrl;
-        if (addresses.length == 1) {
-            jdbcUrl = "jdbc:mysql://" + addresses[0];
-        } else {
-            jdbcUrl = "jdbc:mysql:loadbalance://" + addresses[0];
-            for (int i = 1; i < addresses.length; i++) {
-                jdbcUrl += ',' + addresses[i];
-            }
-        }
-        jdbcUrl += '/' + dbConf.getDbName();
-
-        return jdbcUrl;
-    }
-
-    /**
-     * Clean up the database connection pool.
-     * 
-     * @deprecated Database connections should be clean up by the application or the container.
-     */
-    @Deprecated
-    public static synchronized void cleanUp() {
-        if (dataSource != null) {
-            if (dataSource instanceof HikariDataSource) {
-                ((HikariDataSource) dataSource).close();
-            }
-            // Set it to null so that it can be setup again if required
-            dataSource = null;
-        } else {
-            LOG.warn("Data source is not setup. Did you call DBConnectionPoolManager.setup()?");
-        }
     }
 }
