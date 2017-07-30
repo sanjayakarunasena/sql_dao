@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>tech.sqldao</groupId>
   <artifactId>sql_dao</artifactId>
-  <version>0.3.1-SNAPSHOT</version>
+  <version>0.4.1-RC1</version>
   <name>SQL DAO</name>
   <description>SQL based DAO abstraction which can be used to easily implement a DAO layer.</description>
   <dependencies>
@@ -18,17 +18,17 @@
   	<dependency>
   		<groupId>org.slf4j</groupId>
   		<artifactId>slf4j-api</artifactId>
-  		<version>1.7.12</version>
+  		<version>1.7.25</version>
   	</dependency>
   	<dependency>
   		<groupId>org.slf4j</groupId>
   		<artifactId>slf4j-jdk14</artifactId>
-  		<version>1.7.12</version>
+  		<version>1.7.25</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.derby</groupId>
   		<artifactId>derby</artifactId>
-  		<version>10.12.1.1</version>
+  		<version>10.13.1.1</version>
   		<scope>test</scope>
   	</dependency>
   </dependencies>

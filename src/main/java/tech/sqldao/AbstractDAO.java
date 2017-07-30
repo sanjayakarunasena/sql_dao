@@ -23,6 +23,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,10 @@ import tech.sqldao.dbcon.DBConnectionManager;
  * the method level using @Query annotation. If the query returns a result set, result set mapping to result class type
  * should be defined using @Result annotation. If the result set contains multiple columns, it should be encapsulated
  * into a class defined as a value object.
+ * <p>
+ * Before using this class ensure that a {@link DataSource} is initialised using
+ * {@link DBConnectionManager#init(DataSource)} or {@link DBConnectionManager#init(String)}.
+ * </p>
  * 
  * @author Sanjaya Karunasena
  *
@@ -88,18 +94,33 @@ public abstract class AbstractDAO {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDAO.class);
     private Connection con;
+    private int retryCount;
 
     /**
      * Default constructor.
      */
     protected AbstractDAO() {
+        this.retryCount = 3;
     }
 
     /**
      * Set the {@link Connection} to use.
+     * 
+     * @param con
+     *            {@link Connection}
      */
-    void setConnection(Connection con) {
+    protected void setConnection(Connection con) {
         this.con = con;
+    }
+
+    /**
+     * Set the retry count in case of a {@link SQLTransientException}.
+     * 
+     * @param retryCount
+     *            Retry count
+     */
+    protected void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 
     /**
@@ -120,7 +141,7 @@ public abstract class AbstractDAO {
      */
     protected <T> T find(int methodIndex, Class<T> resultType, Object... paramValues) throws DAOTransientException,
             DBConfigException {
-        return find(true, methodIndex, resultType, paramValues);
+        return find(retryCount, methodIndex, resultType, paramValues);
     }
 
     /**
@@ -141,7 +162,7 @@ public abstract class AbstractDAO {
      * @throws DAOTransientException
      * @throws DBConfigException
      */
-    private <T> T find(boolean retryOnTransientException, int methodIndex, Class<T> resultType, Object... paramValues)
+    private <T> T find(int retryCountOnTransientException, int methodIndex, Class<T> resultType, Object... paramValues)
             throws DAOTransientException, DBConfigException {
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -157,10 +178,10 @@ public abstract class AbstractDAO {
             rs = ps.executeQuery();
             return getValueObj(resultType, rs, getEncapsulate(method), getResultColumns(method));
         } catch (SQLTransientException sqlte) {
-            if (retryOnTransientException) {
+            if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
                 // Only retry once if a transient exception occurred.
-                return find(false, methodIndex, resultType, paramValues);
+                return find(retryCountOnTransientException--, methodIndex, resultType, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_RETRIEVE_AFTER_RETRY, sqlte);
             }
@@ -190,7 +211,7 @@ public abstract class AbstractDAO {
      */
     protected <T> List<T> findAll(int methodIndex, Class<T> resultElementType, Object... paramValues)
             throws DAOTransientException, DBConfigException {
-        return findAll(true, methodIndex, resultElementType, paramValues);
+        return findAll(retryCount, methodIndex, resultElementType, paramValues);
     }
 
     /**
@@ -198,7 +219,7 @@ public abstract class AbstractDAO {
      * names defined using the {@link Result} annotation by the sub class. The sql query to be executed should be
      * defined using the {@link Query} annotation by the sub class.
      * 
-     * @param retryOnTransientException
+     * @param retryCountOnTransientException
      *            Whether to retry if a transient exception occurred.
      * @param methodIndex
      *            Query map key to discover the corresponding {@link Query} and the {@link Result} from the
@@ -212,7 +233,7 @@ public abstract class AbstractDAO {
      * @throws DAOTransientException
      * @throws DBConfigException
      */
-    private <T> List<T> findAll(boolean retryOnTransientException, int methodIndex, Class<T> resultElementType,
+    private <T> List<T> findAll(int retryCountOnTransientException, int methodIndex, Class<T> resultElementType,
             Object... paramValues) throws DAOTransientException, DBConfigException {
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -228,10 +249,10 @@ public abstract class AbstractDAO {
             rs = ps.executeQuery();
             return getValueObjs(resultElementType, rs, getEncapsulate(method), getResultColumns(method));
         } catch (SQLTransientException sqlte) {
-            if (retryOnTransientException) {
+            if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
                 // Only retry once if a transient exception occurred.
-                return findAll(false, methodIndex, resultElementType, paramValues);
+                return findAll(retryCountOnTransientException--, methodIndex, resultElementType, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_RETRIEVE_AFTER_RETRY, sqlte);
             }
@@ -253,13 +274,13 @@ public abstract class AbstractDAO {
      * @throws DBConfigException
      */
     protected void create(int methodIndex, Object... paramValues) throws DAOTransientException, DBConfigException {
-        create(true, methodIndex, paramValues);
+        create(retryCount, methodIndex, paramValues);
     }
 
     /**
      * Create an object in the database.
      * 
-     * @param retryOnTransientException
+     * @param retryCountOnTransientException
      *            Whether to retry if a transient exception occurred.
      * @param methodIndex
      *            Query map key to discover the corresponding {@link Query} from the {@link DaoMethods} for this method.
@@ -268,7 +289,7 @@ public abstract class AbstractDAO {
      * @throws DAOTransientException
      * @throws DBConfigException
      */
-    private void create(boolean retryOnTransientException, int methodIndex, Object... paramValues)
+    private void create(int retryCountOnTransientException, int methodIndex, Object... paramValues)
             throws DAOTransientException, DBConfigException {
         PreparedStatement ps = null;
         // Find the method corresponding the query intend to execute.
@@ -282,10 +303,10 @@ public abstract class AbstractDAO {
             ps = prepareStatement(con, query, paramValues, query.paramTypes());
             ps.executeUpdate();
         } catch (SQLTransientException sqlte) {
-            if (retryOnTransientException) {
+            if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
                 // Only retry once if a transient exception occurred.
-                create(false, methodIndex, paramValues);
+                create(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_INSERT_AFTER_RETRY, sqlte);
             }
@@ -308,13 +329,13 @@ public abstract class AbstractDAO {
      * @throws DBConfigException
      */
     protected int update(int methodIndex, Object... paramValues) throws DAOTransientException, DBConfigException {
-        return update(true, methodIndex, paramValues);
+        return update(retryCount, methodIndex, paramValues);
     }
 
     /**
      * Update an object in the database.
      * 
-     * @param retryOnTransientException
+     * @param retryCountOnTransientException
      *            Whether to retry if a transient exception occurred.
      * @param methodIndex
      *            Query map key to discover the corresponding {@link Query} from the {@link DaoMethods} for this method.
@@ -324,15 +345,15 @@ public abstract class AbstractDAO {
      * @throws DAOTransientException
      * @throws DBConfigException
      */
-    private int update(boolean retryOnTransientException, int methodIndex, Object... paramValues)
+    private int update(int retryCountOnTransientException, int methodIndex, Object... paramValues)
             throws DAOTransientException, DBConfigException {
         try {
             return updateOrDelete(methodIndex, paramValues);
         } catch (SQLTransientException sqlte) {
-            if (retryOnTransientException) {
+            if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
                 // Only retry once if a transient exception occurred.
-                return update(false, methodIndex, paramValues);
+                return update(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_UPDATE_AFTER_RETRY, sqlte);
             }
@@ -353,13 +374,13 @@ public abstract class AbstractDAO {
      * @throws DBConfigException
      */
     protected int delete(int methodIndex, Object... paramValues) throws DAOTransientException, DBConfigException {
-        return delete(true, methodIndex, paramValues);
+        return delete(retryCount, methodIndex, paramValues);
     }
 
     /**
      * Delete an object in the database.
      * 
-     * @param retryOnTransientException
+     * @param retryCountOnTransientException
      *            Whether to retry if a transient exception occurred.
      * @param methodIndex
      *            Query map key to discover the corresponding {@link Query} from the {@link DaoMethods} for this method.
@@ -369,15 +390,15 @@ public abstract class AbstractDAO {
      * @throws DAOTransientException
      * @throws DBConfigException
      */
-    private int delete(boolean retryOnTransientException, int methodIndex, Object... paramValues)
+    private int delete(int retryCountOnTransientException, int methodIndex, Object... paramValues)
             throws DAOTransientException, DBConfigException {
         try {
             return updateOrDelete(methodIndex, paramValues);
         } catch (SQLTransientException sqlte) {
-            if (retryOnTransientException) {
+            if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
                 // Only retry once if a transient exception occurred.
-                return delete(false, methodIndex, paramValues);
+                return delete(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_DELETE_AFTER_RETRY, sqlte);
             }
@@ -419,9 +440,8 @@ public abstract class AbstractDAO {
      * 
      * @return {@link Connection} object
      * @throws SQLException
-     * @throws DBConfigException
      */
-    private Connection getDBConnection() throws SQLException, DBConfigException {
+    private Connection getDBConnection() throws SQLException {
         return DBConnectionManager.getDBCon();
     }
 

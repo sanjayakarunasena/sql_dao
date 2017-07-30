@@ -35,6 +35,7 @@ public class DBConfig {
     public static final String DB_USER = "DBUser";
     public static final String DB_PASSWORD = "DBPassword";
     public static final String CON_TIMEOUT = "ConTimeout";
+    public static final String RETRY_COUNT = "RetryCount";
     public static final String MIN_IDLE_CONS = "MinIdleCons";
     public static final String MAX_POOL_SIZE = "MaxPoolSize";
     public static final String POOL_NAME = "PoolName";
@@ -45,6 +46,7 @@ public class DBConfig {
     private String dbUser;
     private String dbPasswd;
     private int conTimeout;
+    private int retryCount;
     private byte minIdleCons;
     private int maxPoolSize;
     private String poolName;
@@ -56,6 +58,13 @@ public class DBConfig {
     private DBConfig() {
     }
 
+    /**
+     * Load the database configuration from the file "conf/db_config.xml" placed relative to the application home
+     * directory.
+     * 
+     * @return {@link DBConfig}
+     * @throws DBConfigException
+     */
     public static DBConfig loadDBConfig() throws DBConfigException {
         // Get the server home directory
         Environment env = Environment.getEnvironment();
@@ -70,6 +79,7 @@ public class DBConfig {
             dbConfig.setDbUser(propertyFile.getValue(DBConfig.DB_USER));
             dbConfig.setDbPasswd(propertyFile.getValue(DBConfig.DB_PASSWORD));
             dbConfig.setConTimeout(propertyFile.getValue(DBConfig.CON_TIMEOUT));
+            dbConfig.setRetryCount(propertyFile.getValue(DBConfig.RETRY_COUNT));
             dbConfig.setMinIdleCons(propertyFile.getValue(DBConfig.MIN_IDLE_CONS));
             dbConfig.setMaxPoolSize(propertyFile.getValue(DBConfig.MAX_POOL_SIZE));
             dbConfig.setPoolName(propertyFile.getValue(DBConfig.POOL_NAME));
@@ -166,6 +176,21 @@ public class DBConfig {
      */
     private void setConTimeout(String conTimeout) {
         this.conTimeout = Integer.parseInt(conTimeout);
+    }
+
+    /**
+     * @return the retryCount
+     */
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    /**
+     * @param retryCount
+     *            the retryCount to set
+     */
+    public void setRetryCount(String retryCount) {
+        this.retryCount = Integer.parseInt(retryCount);
     }
 
     /**

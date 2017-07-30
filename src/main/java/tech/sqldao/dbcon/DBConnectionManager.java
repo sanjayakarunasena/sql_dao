@@ -22,8 +22,12 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import tech.sqldao.AbstractDAO;
+
 /**
- *
+ * Database connection manager used by {@link AbstractDAO}. {@link DataSource} to be used can be initialised using JNDI.
+ * If the application is not within a JEE environment a programmer initialised {@link DataSource} can be provided.
+ * 
  * @author Sanjaya Karunasena
  */
 public class DBConnectionManager {
@@ -38,22 +42,23 @@ public class DBConnectionManager {
      * @throws SQLException
      * @throws DBConfigException
      */
-    public static Connection getDBCon() throws SQLException, DBConfigException {
+    public static Connection getDBCon() throws SQLException, DBConfigRuntimeException {
         if (dataSource == null) {
-            throw new DBConfigException("DataSource is not setup. Did you call DBConnectionManager.init()?");
+            throw new DBConfigRuntimeException("Data source is not setup. Did you call DBConnectionManager.init()?");
         }
         return dataSource.getConnection();
     }
 
     /**
-     * Initialise the data source for the connection pool from a JNDI configuration, "java:comp/env/jdbc/my_server_ds".
+     * Initialise the data source for the connection pool from a JNDI configuration, "java:comp/env/jdbc/mydatasource".
+     * Please note the environment, "java:comp/env".
      * 
-     * @param datasource
-     *            Datasource name (e.g. jdbc/mydatasource)
+     * @param jndiDataSource
+     *            Data source name (e.g. jdbc/mydatasource)
      * 
      * @throws DBConfigException
      */
-    public static synchronized void init(String jndiDatasource) throws DBConfigException {
+    public static synchronized void init(String jndiDataSource) throws DBConfigException {
         if (DBConnectionManager.dataSource != null) {
             LOG.warn("Data source is already initialise for this instance.");
             return;
@@ -61,7 +66,7 @@ public class DBConnectionManager {
 
         try {
             InitialContext ic = new InitialContext();
-            DBConnectionManager.dataSource = (DataSource) ic.lookup("java:comp/env/" + jndiDatasource);
+            DBConnectionManager.dataSource = (DataSource) ic.lookup("java:comp/env/" + jndiDataSource);
         } catch (NamingException ne) {
             throw new DBConfigException("JNDI Error!", ne);
         }
@@ -70,8 +75,8 @@ public class DBConnectionManager {
     /**
      * Use an already initialised data source.
      * 
-     * @param datasource
-     *            Datasource which is already initialised by the application.
+     * @param dataSource
+     *            DataSource which is already initialised by the application.
      * 
      * @throws DBConfigException
      */
