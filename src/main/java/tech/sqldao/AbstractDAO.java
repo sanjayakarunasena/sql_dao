@@ -114,7 +114,7 @@ public abstract class AbstractDAO {
     }
 
     /**
-     * Set the retry count in case of a {@link SQLTransientException}.
+     * Set the retry count in case of a {@link SQLTransientException}. The default value is 3.
      * 
      * @param retryCount
      *            Retry count
@@ -180,7 +180,8 @@ public abstract class AbstractDAO {
         } catch (SQLTransientException sqlte) {
             if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
-                // Only retry once if a transient exception occurred.
+                // Retry "retry count" times if a transient exception occurred after a little delay.
+                ThreadUtil.delay(500);
                 return find(retryCountOnTransientException--, methodIndex, resultType, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_RETRIEVE_AFTER_RETRY, sqlte);
@@ -251,7 +252,8 @@ public abstract class AbstractDAO {
         } catch (SQLTransientException sqlte) {
             if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
-                // Only retry once if a transient exception occurred.
+                // Retry "retry count" times if a transient exception occurred after a little delay.
+                ThreadUtil.delay(500);
                 return findAll(retryCountOnTransientException--, methodIndex, resultElementType, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_RETRIEVE_AFTER_RETRY, sqlte);
@@ -305,7 +307,8 @@ public abstract class AbstractDAO {
         } catch (SQLTransientException sqlte) {
             if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
-                // Only retry once if a transient exception occurred.
+                // Retry "retry count" times if a transient exception occurred after a little delay.
+                ThreadUtil.delay(500);
                 create(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_INSERT_AFTER_RETRY, sqlte);
@@ -352,7 +355,8 @@ public abstract class AbstractDAO {
         } catch (SQLTransientException sqlte) {
             if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
-                // Only retry once if a transient exception occurred.
+                // Retry "retry count" times if a transient exception occurred after a little delay.
+                ThreadUtil.delay(500);
                 return update(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_UPDATE_AFTER_RETRY, sqlte);
@@ -397,7 +401,8 @@ public abstract class AbstractDAO {
         } catch (SQLTransientException sqlte) {
             if (retryCountOnTransientException <= 0) {
                 LOG.warn(CommonMsg.WARN_TRANSIENT_EXCEPTION, sqlte);
-                // Only retry once if a transient exception occurred.
+                // Retry "retry count" times if a transient exception occurred after a little delay.
+                ThreadUtil.delay(500);
                 return delete(retryCountOnTransientException--, methodIndex, paramValues);
             } else {
                 throw new DAOTransientException(CommonMsg.ERROR_DATA_DELETE_AFTER_RETRY, sqlte);
