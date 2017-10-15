@@ -53,11 +53,11 @@ public @interface Result {
         public String field() default "";
 
         /**
-         * Java type to use when retrieving data.
+         * Java type to use when retrieving data. If not specify the default mapping of the JDBC driver is used.
          * <p>
          * <i>E.g.</i> String.class
          */
-        public Class<?> type();
+        public Class<?> type() default DefaultType.class;
     }
 
     /**

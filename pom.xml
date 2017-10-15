@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>tech.sqldao</groupId>
   <artifactId>sql_dao</artifactId>
-  <version>0.4.1-RC1</version>
+  <version>0.5.0-alpha</version>
   <name>SQL DAO</name>
   <description>SQL based DAO abstraction which can be used to easily implement a DAO layer.</description>
   <dependencies>
